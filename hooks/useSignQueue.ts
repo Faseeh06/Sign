@@ -28,7 +28,7 @@ export function useSignQueue() {
   useEffect(() => {
     if (isProcessing || queue.length === 0) return;
 
-    let timeoutId: NodeJS.Timeout;
+    let timeoutId: NodeJS.Timeout | undefined;
 
     const processNext = async () => {
       setIsProcessing(true);
@@ -43,23 +43,31 @@ export function useSignQueue() {
       if (action.type === "sign") {
         setCurrentRender({ type: "sign", gifUrl: action.gif, word: action.word });
         
-        // Wait 900ms for a full sign word
-        await new Promise((resolve) => setTimeout(resolve, 900));
+        // Dynamically calculate delay: base 800ms, faster if queue is building up
+        const qSize = queueRef.current.length;
+        const wordDelay = Math.max(350, 800 - (qSize * 100));
+        await new Promise((resolve) => setTimeout(resolve, wordDelay));
       } else if (action.type === "fingerspell") {
         // Render each letter sequentially
         for (const letter of action.letters) {
           const letterGifUrl = require("../lib/signDictionary").aslAlphabet[letter];
           if (letterGifUrl) {
             setCurrentRender({ type: "letter", letterGifUrl, letter, word: action.word });
-            // Wait 400ms per letter spelling
-            await new Promise((resolve) => setTimeout(resolve, 400));
+            
+            // Fingerspelling cannot be too fast otherwise DOM can't paint and SVGs skip!
+            // Min readable delay per letter is ~350ms minimum.
+            const qSize = queueRef.current.length;
+            const letterDelay = Math.max(350, 500 - (qSize * 25));
+            await new Promise((resolve) => setTimeout(resolve, letterDelay));
           }
         }
       }
 
       // Small blank frame between words
       setCurrentRender({ type: "idle" });
-      await new Promise((resolve) => setTimeout(resolve, 150));
+      const qSize = queueRef.current.length;
+      const blankDelay = Math.max(50, 150 - (qSize * 15));
+      await new Promise((resolve) => setTimeout(resolve, blankDelay));
 
       // Pop the action
       setQueue((prev) => prev.slice(1));

@@ -20,6 +20,19 @@ export default function DashboardPage() {
     onWordRecognized: addWord
   });
 
+  const [textInput, setTextInput] = useState("");
+
+  const handleTextSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (textInput.trim()) {
+      const words = textInput.trim().split(/\s+/);
+      words.forEach((word, index) => {
+        addWord(word, index === 0);
+      });
+      setTextInput("");
+    }
+  };
+
   const [mounted, setMounted] = useState(false);
   const [nativeSupport, setNativeSupport] = useState(true);
   
@@ -113,8 +126,9 @@ export default function DashboardPage() {
                   className="relative w-full h-full flex flex-col items-center justify-center p-4 bg-black/5"
                 >
                   <img 
-                    src={currentRender.gifUrl} 
+                    src={currentRender.gifUrl.includes('lifeprint.com') ? `/api/proxy?url=${encodeURIComponent(currentRender.gifUrl)}` : currentRender.gifUrl} 
                     alt={currentRender.word}
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
                     className="h-full object-contain drop-shadow-xl rounded-xl mix-blend-multiply dark:mix-blend-normal"
                   />
                   <div className="absolute bottom-4 left-0 right-0 text-center">
@@ -135,7 +149,7 @@ export default function DashboardPage() {
                   className="relative w-full h-full flex flex-col items-center justify-center bg-black/5"
                 >
                   <img 
-                    src={currentRender.letterGifUrl} 
+                    src={currentRender.letterGifUrl.includes('lifeprint.com') ? `/api/proxy?url=${encodeURIComponent(currentRender.letterGifUrl)}` : currentRender.letterGifUrl} 
                     alt={currentRender.letter}
                     className="max-h-[80%] object-contain drop-shadow-lg mix-blend-multiply dark:mix-blend-normal"
                   />
@@ -177,6 +191,26 @@ export default function DashboardPage() {
                 {isListening ? "Click to stop interpretation" : "Click to begin translating speech"}
               </p>
             </div>
+          </div>
+
+          {/* Manual Input Box */}
+          <div className="bg-card border border-border p-6 rounded-3xl shadow-sm flex flex-col gap-4">
+            <h2 className="text-xl font-bold">Manual Text Input</h2>
+            <form onSubmit={handleTextSubmit} className="flex gap-2 w-full">
+              <input
+                type="text"
+                value={textInput}
+                onChange={(e) => setTextInput(e.target.value)}
+                placeholder="Type a word or sentence..."
+                className="flex flex-1 h-12 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+              />
+              <button
+                type="submit"
+                className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring bg-primary text-primary-foreground shadow hover:bg-primary/90 h-12 px-8"
+              >
+                Sign It
+              </button>
+            </form>
           </div>
 
           {/* Transcript Box */}
